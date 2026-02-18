@@ -33,6 +33,7 @@
 
 import numpy as np
 from pydantic import BaseModel
+import json
 
 # use this for parsing moves into my board format
 class ChessMove(BaseModel):
@@ -47,7 +48,7 @@ class ChessMove(BaseModel):
 
     # parse square into file and rank
     file: str # file string
-    rank: int # row number (on chess board)
+    rank: str # row number as string (on chess board)
 
     # also store coords in numpy array
     file_idx: int
@@ -56,9 +57,11 @@ class ChessMove(BaseModel):
     # capture
     is_capture: bool
 
-    # if pawn capture, include the starting file letter
+    # if pawn/ambiguous capture, include the starting file letter (or potentially rank)
     is_pawn_capture: bool
+    is_ambiguous: bool
     starting_file: str | None
+    starting_rank: str | None
 
     # castle
     is_castle: bool
@@ -94,61 +97,153 @@ class ChessMove(BaseModel):
             "rank_idx": 0,
             "is_capture": False,
             "is_pawn_capture": False,
+            "is_ambiguous": False,
             "starting_file": None,
+            "starting_rank": None,
             "is_castle": False,
             "is_king_side": None,
             "is_check": False,
             "is_mate": False
         })
 
+        print("STARTING DATA:", data)
+
         # Get move number
+        move = data.get("move")
         split_move = move.split(".")
         number = split_move[0]
-        print(number)
+        print(split_move)
         data.update({"number":number})
 
-        print("DATA: ", data)
-        move = data.get("move")
+        # get the actual move text
+        move_text = split_move[1]
+        
+
+
+        
 
         # castle validation (note that castle can still lead to check & mate)
-        if split_move[0:3] is "0-0":
+        # handle this first since the notation is so different we can just check directly
+        if move_text[0:3] == "0-0":
+            print("KINGSIDE CASTLE")
             data.update({"is_castle": True})
             data.update({"is_king_side": True})
-            if split_move.endswith("+"):
+            if move_text.endswith("+"):
                 data.update({"is_check": True})
-            if split_move.endswith("#"):
+            if move_text.endswith("#"):
                 data.update({"is_mate": True})
             return
         
-        if split_move[0:5] is "0-0-0" :
+        if move_text[0:5] == "0-0-0" :
+            print("QUEENSIDE CASTLE")
             data.update({"is_castle": True})
             data.update({"is_king_side": False})
-            if split_move.endswith("+"):
+            if move_text.endswith("+"):
                 data.update({"is_check": True})
-            if split_move.endswith("#"):
+            if move_text.endswith("#"):
                 data.update({"is_mate": True})
             return
 
                 
         
 
-        # now we can iterate through the actual move text 
-        move_text = split_move[1]
-        length = len(move_text)
+        # look for piece info
+        c = move_text[0]
+        if c.isupper():
+            data.update({"piece": c})
+        else:
+            data.update({"piece": ""})
 
-        for i in range(length):
-            c = move_text[i]
+        # basically create a mini graph to sort through the rest
+        # start by checking if the move is a capture
+        if "x" in move_text:
+            data.update({"is_capture": True})
+            t = move_text.split("x")
 
-            # look for piece info
-            if i == 0:
-                if c.isupper():
-                    data.update({"piece": c})
+            # handle pawn capture notation
+            if data.get("piece") == "":
+                data.update({
+                    "is_pawn_capture": True,
+                    "starting_file": t[0]
+                })
+            
+            # handle ambiguous capture (file or rank before x)
+            elif len(t[0]) == 2:
+                data.update({"is_ambiguous": True})
+                # it's a number -> rank
+                if ord((t[0])[1]) < 65:
+                    data.update({"starting_rank": (t[0])[1]})
                 else:
-                    data.update({"piece": ""})
+                    data.update({"starting_file": (t[0])[1]})
+            
+            # now get square info from the second half
+            # t[1] should just be the coords for the new square
+            square = t[1]
+            data.update({
+                "file": square[0],
+                "rank": square[1],
+                "file_idx": ord(square[0]) - 97,
+                "rank_idx": int(square[1]) - 1
+            })
+
+            if square.endswith("#"):
+                data.update({"is_mate": True})
+            if square.endswith("+"):
+                data.update({"is_check": True})
+        
+        # now handle the non-capture case
+        else:
+            
+            # separate pawn move from other
+            # allows us to check length
+            if data.get("piece") == "":
+                data.update({
+                    "file": move_text[0],
+                    "rank": move_text[1],
+                    "file_idx": ord(move_text[0]) - 97,
+                    "rank_idx": int(move_text[1]) - 1
+                })
+            
+            # with piece, standard move is Bb4 (len = 3)
+            # ambiguous move becomes Bcb4 or B3b4
+            else:
+                
+                # use check_chars to handle length
+                # if check or checkmate, len will be += 1
+                check_chars = 0
+                if move_text.endswith("#"):
+                    data.update({"is_mate": True})
+                    check_chars += 1
+                if move_text.endswith("+"):
+                    data.update({"is_check": True})
+                    check_chars += 1
+
+                # standard path
+                if len(move_text) == 3 + check_chars:
+                    data.update({
+                        "file": move_text[1],
+                        "rank": move_text[2],
+                        "file_idx": ord(move_text[1]) - 97,
+                        "rank_idx": int(move_text[2]) - 1
+                    })
+                else:
+                    data.update({
+                        "is_ambiguous": True,
+                        "file": move_text[2],
+                        "rank": move_text[3],
+                        "file_idx": ord(move_text[2]) - 97,
+                        "rank_idx": int(move_text[3]) - 1
+                    })
+                    if ord((move_text)[1]) < 65:
+                        data.update({"starting_rank": (move_text)[1]})
+                    else:
+                        data.update({"starting_file": (move_text)[1]}) 
 
 
+            
 
-        print("NEW DATA:", data)
+
+        print("NEW DATA:", json.dumps(data, indent=4))
 
         super().__init__(**data)
 
@@ -195,7 +290,8 @@ class ChessGame:
 
 def main():
 
-    move = ChessMove(move= "1.b4+", is_white=True)
+    notation = input("Enter your move > ")
+    move = ChessMove(move= notation, is_white=True)
 
     print(move)
 

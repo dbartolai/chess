@@ -34,6 +34,7 @@
 import numpy as np
 from pydantic import BaseModel
 import json
+from typing import List
 
 # use this for parsing moves into my board format
 class ChessMove(BaseModel):
@@ -61,7 +62,9 @@ class ChessMove(BaseModel):
     is_pawn_capture: bool
     is_ambiguous: bool
     starting_file: str | None
+    starting_file_idx: int | None
     starting_rank: str | None
+    starting_rank_idx: int | None
 
     # castle
     is_castle: bool
@@ -100,19 +103,19 @@ class ChessMove(BaseModel):
             "is_ambiguous": False,
             "starting_file": None,
             "starting_rank": None,
+            "starting_file_idx": None,
+            "starting_rank_idx": None,
             "is_castle": False,
             "is_king_side": None,
             "is_check": False,
             "is_mate": False
         })
 
-        print("STARTING DATA:", data)
 
         # Get move number
         move = data.get("move")
         split_move = move.split(".")
         number = split_move[0]
-        print(split_move)
         data.update({"number":number})
 
         # get the actual move text
@@ -125,7 +128,6 @@ class ChessMove(BaseModel):
         # castle validation (note that castle can still lead to check & mate)
         # handle this first since the notation is so different we can just check directly
         if move_text[0:3] == "0-0":
-            print("KINGSIDE CASTLE")
             data.update({"is_castle": True})
             data.update({"is_king_side": True})
             if move_text.endswith("+"):
@@ -135,7 +137,6 @@ class ChessMove(BaseModel):
             return
         
         if move_text[0:5] == "0-0-0" :
-            print("QUEENSIDE CASTLE")
             data.update({"is_castle": True})
             data.update({"is_king_side": False})
             if move_text.endswith("+"):
@@ -164,7 +165,8 @@ class ChessMove(BaseModel):
             if data.get("piece") == "":
                 data.update({
                     "is_pawn_capture": True,
-                    "starting_file": t[0]
+                    "starting_file": t[0],
+                    "starting_file_idx": ord(t[0]) - 97
                 })
             
             # handle ambiguous capture (file or rank before x)
@@ -172,9 +174,9 @@ class ChessMove(BaseModel):
                 data.update({"is_ambiguous": True})
                 # it's a number -> rank
                 if ord((t[0])[1]) < 65:
-                    data.update({"starting_rank": (t[0])[1]})
+                    data.update({"starting_rank": (t[0])[1], "starting_rank_idx": int((t[0])[1])-1})
                 else:
-                    data.update({"starting_file": (t[0])[1]})
+                    data.update({"starting_file": (t[0])[1], "starting_file_idx": ord((t[0])[1])-97})
             
             # now get square info from the second half
             # t[1] should just be the coords for the new square
@@ -239,12 +241,6 @@ class ChessMove(BaseModel):
                     else:
                         data.update({"starting_file": (move_text)[1]}) 
 
-
-            
-
-
-        print("NEW DATA:", json.dumps(data, indent=4))
-
         super().__init__(**data)
 
 
@@ -259,12 +255,13 @@ class ChessGame:
     def __init__(self):
 
         # board
+        # index by self.board[rank_idx, file_idx]
         self.board = np.array([
             [4, 2, 3, 5, 6, 3, 2, 4],
             [1, 1, 1, 1, 1, 1, 1, 1],
             [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, -3, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [-1, -1, -1, -1, -1, -1, -1, -1],
             [-4, -2, -3, -5, -6, -3, -2, -4]
@@ -280,8 +277,101 @@ class ChessGame:
         self.black_can_castle_q = True
         pass
 
+    # take in square coords and output value at that square
+    def get_square(self, file_idx, rank_idx):
+        return self.board[rank_idx, file_idx]
+    
+    # determine if a move puts user into check
+    # accept a mutated board (different from self.board)
+    # return a boolean (True means move is good -> NO CHECK)
+    def validate_check(self, is_white, new_board) -> bool:
+
+        pass
+
+
+    # determine if the pawn move is valid  
+    # return validity of the pawn move
+    def validate_pawn_move(self, move: ChessMove) -> bool:
+
+
+        # ALGORITHM:
+        # 0. Get the contents of the square that we are moving to 
+        f = move.file_idx
+        r = move.rank_idx
+        square = self.get_square(f, r)
+        # 1. If the move is NOT a pawn capture, just check if square empty and pawn can move there 
+        if not move.is_pawn_capture:
+
+            # check if square is empty
+            is_empty = (square == 0)
+
+            # white moves in increasing rank idx, black in decreasing
+            # so white needs to start at smaller rank idx, black at larger
+            pawn_exists = False
+            if move.is_white:
+                # a white pawn can move to the specified square if it's one rank behind
+                # or if it's on the starting rank it can move two ranks given the intermediary rank is empty
+                pawn_exists = (self.get_square(f, r-1) == 1 or (self.get_square(f, 1) == 1 and r == 3 and self.get_square(f, 2) == 0))
+            else:
+                # a black pawn can move to the specified square if it's one rank ahead
+                # or if it's on the starting rank it can move two ranks given the intermediary rank is empty
+                pawn_exists = (self.get_square(f, r+1) == 1 or (self.get_square(f, 6) == 1 and r == 4 and self.get_square(f, 5) == 0))
+
+            # returns true if the square is empty and a paawn can go there
+            return is_empty and pawn_exists
+
+        # 2. If the move IS a pawn capture, the square should be occupied by a piece of the other color
+        #       and there needs to be a pawn that can move diagonally there
+        else:
+            # make sure square is occupied
+            is_occupied = False
+
+            pawn_exists = False
+            if move.is_white:
+                is_occupied = (square < 0)
+                # With pawn captures, the file of the pawn is provided
+                #   and the rank is implied
+                f_start = move.starting_file_idx
+                pawn_exists = (self.get_square(f_start, r-1) == 1)
+
+            else:
+                is_occupied = (square > 0)
+                f_start = move.starting_file_idx
+                pawn_exists = (self.get_square(f_start, r+1) == 1)
+
+            return is_occupied and pawn_exists
+
+
     # checks if a move for white is valid
-    def validate_white_move(self, move) -> bool:
+    # if returning true, the move has been made
+    def validate_white_move(self, move: ChessMove) -> bool:
+
+        # 1. Make sure the move is valid for the given piece/move type
+        piece = move.piece
+
+        good_move = False
+        if piece == "":
+            good_move = self.validate_pawn_move(move)
+        elif piece == "N":
+            pass
+        elif piece == "B":
+            pass
+        elif piece == "R":
+            pass
+        elif piece == "Q":
+            pass
+        elif piece == "K":
+            pass
+        else:
+            # handle castling, en passant, edge cases, etc here.
+            pass
+
+        # 2. Create a new board with the move made to test for check
+
+        # 3. Make sure the move doesn't place the user into check 
+
+        # 4. Make the move (overwrite self.board with new board)
+
         pass
 
     def validate_black_move(self, move) -> bool:
@@ -290,9 +380,12 @@ class ChessGame:
 
 def main():
 
-    notation = input("Enter your move > ")
+    game = ChessGame()
+
+    notation = "1."+input("Enter your move > ")
     move = ChessMove(move= notation, is_white=True)
 
-    print(move)
+    if move.piece == "":
+        print(game.validate_pawn_move(move))
 
 main()

@@ -309,6 +309,7 @@ class ChessGame:
 
             # check if square is empty
             is_empty = (square == 0)
+            
 
             # white moves in increasing rank idx, black in decreasing
             # so white needs to start at smaller rank idx, black at larger
@@ -361,6 +362,7 @@ class ChessGame:
             
         # check if square is empty
         is_empty = (square == 0)
+        is_opponent = square < 0 if move.is_white else square>0
 
         # check that king can move theres
         # iterate over adjacent squares
@@ -388,7 +390,7 @@ class ChessGame:
         # if capturing, the square shouldn't be empty
         # otherwise, it should be
         if move.is_capture:
-            return king_exists and (not is_empty)
+            return king_exists and (is_opponent)
         else:
             return is_empty and king_exists
         
@@ -445,6 +447,7 @@ class ChessGame:
             
         # check if square is empty
         is_empty = (square == 0)
+        is_opponent = square < 0 if move.is_white else square>0
   
 
         # diagonals have slope of 1 and -1
@@ -482,7 +485,7 @@ class ChessGame:
 
                     # if (f,r) == bishop square and (f,r) is not empty, then should be a capture
                     if bishop_square == (f,r):
-                        capture_valid_pos = True if (move.is_capture != is_empty) else False
+                        capture_valid_pos = True if ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty) ) else False
                     
                     # otherwise, make sure no blockers
                     else:
@@ -498,7 +501,7 @@ class ChessGame:
 
                     # if (f,r) == bishop square and (f,r) is not empty, then should be a capture
                     if bishop_square == (f,r):
-                        capture_valid_pos = True if (move.is_capture != is_empty) else False
+                        capture_valid_pos = True if ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty) ) else False
                     
                     # otherwise, make sure no blockers
                     else:
@@ -540,7 +543,7 @@ class ChessGame:
 
                     # if (f,r) == bishop square and (f,r) is not empty, then should be a capture
                     if bishop_square == (f,r):
-                        capture_valid_neg = True if (move.is_capture != is_empty) else False
+                        capture_valid_neg = True if ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty) ) else False
                     
                     # otherwise, make sure no blockers
                     else:
@@ -556,7 +559,7 @@ class ChessGame:
 
                     # if (f,r) == bishop square and (f,r) is not empty, then should be a capture
                     if bishop_square == (f,r):
-                        capture_valid_neg = True if (move.is_capture != is_empty) else False
+                        capture_valid_neg = True if ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty) ) else False
                     
                     # otherwise, make sure no blockers
                     else:
@@ -570,13 +573,101 @@ class ChessGame:
 
 
 
+    def validate_rook_move(self, move: ChessMove) -> bool:
+
+        f = move.file_idx
+        r = move.rank_idx
+
+        square = self.get_square(f,r)
+
+        is_empty = (square==0)
+        is_opponent = (square < 0) if move.is_white else (square>0)
+        sign = 1 if move.is_white else -1
+
+        # find rook
+        rook_on_rank = False
+        rook_on_file = False
+        rook_square_file = (0,0)
+        rook_square_rank = (0,0)
+
+        # check file
+        for i in range(8):
+
+            s = self.get_square(f,i)
+            if s == sign*4:
+                rook_on_file = True
+                rook_square_file = (f,i)
 
 
+        # check rank
+        for i in range(8):
+
+            s = self.get_square(i,r)
+            if s == sign*4:
+                rook_on_rank = True
+                rook_square_rank = (i,r)
 
 
+        # move across file
+        blocked_on_file = False
+        if rook_on_file:
+
+            # low rank to high
+            if rook_square_file[1] < r:
+
+                y = rook_square_file[1]
+                while y < r:
+                    
+                    y+=1
+                    if y < r and self.get_square(f,y) != 0:
+                        blocked_on_file = True
+            
+            # high rank to low
+            else:
+
+                y = rook_square_file[1]
+                while y > r:
+                    
+                    y-=1
+                    if y < r and self.get_square(f,y) != 0:
+                        blocked_on_file = True
+
+
+        # move across rank
+        blocked_on_rank = False
+        if rook_on_rank:
+
+                # low rank to high
+            if rook_square_rank[1] < r:
+
+                y = rook_square_rank[1]
+                while y < r:
+                    
+                    y+=1
+                    if y < r and self.get_square(f,y) != 0:
+                        blocked_on_rank = True
+            
+            # high rank to low
+            else:
+
+                y = rook_square_rank[1]
+                while y > r:
+                    
+                    y-=1
+                    if y < r and self.get_square(f,y) != 0:
+                        blocked_on_rank = True
+
+        return (
+            (rook_on_file and (not blocked_on_file) and ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty))) 
+            or (rook_on_rank and (not blocked_on_rank) and ((move.is_capture and is_opponent) or ((not move.is_capture) and is_empty)))
+        )
+    
+    def validate_queen_move(self, move: ChessMove) -> bool:
+        return self.validate_bishop_move(move) or self.validate_rook_move(move)
 
     # checks if a move is valid
     # if returning true, the move has been made
+    # NOTE still must check for en passant, pawn promotion, and castling
     def validate_move(self, move: ChessMove) -> bool:
 
         # 1. Make sure the move is valid for the given piece/move type
@@ -590,9 +681,9 @@ class ChessGame:
         elif piece == "B":
             valid_move = self.validate_bishop_move(move)
         elif piece == "R":
-            pass
+            valid_move = self.validate_rook_move(move)
         elif piece == "Q":
-            pass
+            valid_move = self.validate_queen_move(move)
         elif piece == "K":
             valid_move = self.validate_king_move(move)
         else:

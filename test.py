@@ -305,7 +305,7 @@ def test_bishop_bad_capture():
     m = ChessMove(move=move, is_white = True)
     
     if game.validate_move(m):
-        print("TEST KNIGHT BAD CAPTURE FAILED")
+        print("TEST BISHOP BAD CAPTURE FAILED")
         return False
     return True
 
@@ -333,6 +333,246 @@ def test_bishop_blocked_capture():
         return False
     return True
 
+
+# ================== KING TESTS ====================
+
+def test_king_valid_move():
+
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 1, 0, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Ke2"
+    m = ChessMove(move=move, is_white = True)
+
+    if not game.validate_move(m):
+        print("TEST KING VALID MOVE FAILED")
+        return False
+    return True
+
+
+def test_king_invalid_move():
+
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Ke2"
+    m = ChessMove(move=move, is_white = True)
+
+    if game.validate_move(m):
+        print("TEST PAWN INVALID MOVE FAILED")
+        return False
+    return True
+
+
+def test_king_capture():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 0, -1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, -3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Kxe2"
+    m = ChessMove(move=move, is_white = True)
+    if not game.validate_move(m):
+        print("TEST KING CPATURE FAILED")
+        return False
+    return True
+
+
+def test_king_bad_capture():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Kxe2"
+    m = ChessMove(move=move, is_white = True)
+    
+    if game.validate_move(m):
+        print("TEST KING BAD CAPTURE FAILED")
+        return False
+    return True
+
+
+# ================== ROOK TESTS ====================
+
+def test_rook_move():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [0, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Ra6"
+    m = ChessMove(move=move, is_white = True)
+    print(m)
+    
+    if not game.validate_move(m):
+        print("TEST ROOK MOVE FAILED")
+        return False
+    return True
+
+def test_rook_bad_move():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Rc6"
+    m = ChessMove(move=move, is_white = True)
+    
+    if game.validate_move(m):
+        print("TEST ROOK BAD MOVE FAILED")
+        return False
+    return True
+
+def test_rook_blocked_move():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Ra3"
+    m = ChessMove(move=move, is_white = True)
+    
+    if game.validate_move(m):
+        print("TEST ROOK BLOCKED MOVE FAILED")
+        return False
+    return True
+
+
+def test_rook_capture():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [-1, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, -4, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Rxa2"
+    m = ChessMove(move=move, is_white = True)
+    
+    if not game.validate_move(m):
+        print("TEST ROOK CAPTURE FAILED")
+        return False
+    return True
+
+def test_rook_bad_capture():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [0, 1, 1, 0, 1, 1, 1, 1],
+            [0, 0, 4, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Rxa5"
+    m = ChessMove(move=move, is_white = True)
+    
+    if game.validate_move(m):
+        print("TEST ROOK BAD CAPTURE FAILED")
+        return False
+    return True
+
+
+def test_rook_blocked_capture():
+    
+    board = np.array([
+            [4, 2, 3, 5, 6, 3, 2, 4],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 4, 0, -2, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [-1, 0, 0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [-4, -2, -3, -5, -6, -3, -2, -4]
+        ])
+    
+    game = ChessGame(board)
+
+    move = "1." + "Rxa5"
+    m = ChessMove(move=move, is_white = True)
+    
+    if game.validate_move(m):
+        print("TEST ROOK BLOCKED CAPTURE FAILED")
+        return False
+    return True
 
 
 
@@ -363,7 +603,18 @@ def tests():
     if not test_bishop_blocked_capture(): all_passed = False
 
     # KING TESTS
-    
+    if not test_king_valid_move(): all_passed = False
+    if not test_king_invalid_move(): all_passed = False
+    if not test_king_capture(): all_passed = False
+    if not test_king_bad_capture(): all_passed = False
+
+    # ROOK TESTS
+    if not test_rook_move(): all_passed = False
+    if not test_rook_bad_move(): all_passed = False
+    if not test_rook_blocked_move(): all_passed = False
+    if not test_rook_capture(): all_passed = False
+    if not test_rook_bad_capture(): all_passed = False
+    if not test_rook_blocked_capture(): all_passed = False
 
 
     # all passed

@@ -1,11 +1,12 @@
 # Chess Engine
----
+
+*Temporarily on hold through finals and my summer internship but I got most of the move validation done*
 
 ### Goal:
 ---
-- In this repo, I'm creating a chess engine from scratch; no ai or copying
+- In this repo, I'm creating a chess engine from scratch; **no ai or copying**
 - Learning to solve problems on my own and get better at chess
-- Follow along with daily posts [here](https://drakebartolai.com)
+- Spending time under tension when I'm less busy 
 
 ### Functionality:
 ---

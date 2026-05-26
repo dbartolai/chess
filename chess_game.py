@@ -690,7 +690,7 @@ class ChessGame:
             # handle castling, edge cases, etc here.
             pass
 
-        # 2. Create a new board with the move made to test for check
+        # 2. Create a new board with the move made
 
         # 3. Make sure the move doesn't place the user into check 
 
